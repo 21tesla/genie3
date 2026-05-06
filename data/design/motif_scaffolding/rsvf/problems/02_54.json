@@ -1,0 +1,7 @@
+{
+    "motif_filepaths": [
+        "data/design/motif_scaffolding/rsvf/motifs/site_v.pdb",
+        "data/design/motif_scaffolding/rsvf/motifs/site_iv.pdb"
+    ],
+    "segment_config_str": "0-30,A1,0-30,B1,0-30"
+}

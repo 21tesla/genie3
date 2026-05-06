@@ -1,0 +1,175 @@
+name: binderbench
+problem:
+
+  01_bhrf1:
+    name: BHRF1
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/01_bhrf1.pdb
+      hotspot:
+        A65
+        A74
+        A77
+        A82
+        A85
+        A93
+    binder:
+      min_length: 80
+      max_length: 120
+    tag:
+      AlphaProteo
+    other:
+      pdb_id: 2WH6
+  
+  02_sc2rbd:
+    name: SC2RBD
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/02_sc2rbd.pdb
+      hotspot:
+        E485
+        E489
+        E494
+        E500
+        E505
+    binder:
+      min_length: 80
+      max_length: 120
+    tag:
+      AlphaProteo
+    other:
+      pdb_id: 6M0J
+
+  03_il7ra:
+    name: IL-7RA
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/03_il7ra.pdb
+      hotspot:
+        B58
+        B80
+        B139
+    binder:
+      min_length: 50
+      max_length: 120
+    tag:
+      RFDiffusion
+      AlphaProteo
+    other:
+      pdb_id: 3DI3
+
+  04_pdl1:
+    name: PD-L1
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/04_pdl1.pdb
+      hotspot:
+        A56
+        A115
+        A123
+    binder:
+      min_length: 50
+      max_length: 120
+    tag:
+      RFDiffusion
+      AlphaProteo
+    other:
+      pdb_id: 5O45
+
+  05_trka:
+    name: TrkA
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/05_trka.pdb
+      hotspot:
+        X294
+        X296
+        X333
+    binder:
+      min_length: 50
+      max_length: 120
+    tag:
+      RFDiffusion
+      AlphaProteo
+    other:
+      pdb_id: 1WWW
+
+  06_insulinr:
+    name: InsulinR
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/06_insulinr.pdb
+      hotspot:
+        E64
+        E88
+        E96
+    binder:
+      min_length: 40
+      max_length: 120
+    tag:
+      RFDiffusion
+      AlphaProteo
+    other:
+      pdb_id: 4ZXB
+
+  07_h1:
+    name: H1
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/07_h1.pdb
+      hotspot:
+        B521
+        B545
+        B552
+    binder:
+      min_length: 80
+      max_length: 120
+    tag:
+      RFDiffusion
+      AlphaProteo
+    other:
+      pdb_id: 5VLI
+
+  08_vegfa:
+    name: VEGF-A
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/08_vegfa.pdb
+      hotspot:
+        W81
+        W83
+        W91
+    binder:
+      min_length: 50
+      max_length: 140
+    tag:
+      AlphaProteo
+    other:
+      pdb_id: 1BJ1
+
+  09_il17a:
+    name: IL-17A
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/09_il17a.pdb
+      hotspot:
+        A94
+        A116
+        B67
+      sequence:
+        PRTVMVNLNIHNRNTNTNPKRSSDYYDRSTSPWNLHRNEDPERYPSVIWEAKCRHLGCINADGNVDYHMNSVPIQQEILVLRREPPHSPNSFRLEKILVSVGCTCVTPI
+        PRTVMVNLNIHNRNTNTNPKRSSDYYDRSTSPWNLHRNEDPERYPSVIWEAKCRHLGCINADGNVDYHMNSVPIQQEILVLRREPPHSPNSFRLEKILVSVGCTCVTPI
+    binder:
+      min_length: 50
+      max_length: 140
+    tag:
+      AlphaProteo
+    other:
+      pdb_id: 4HSA
+
+  10_tnfa:
+    name: TNFa
+    target:
+      filepath: scripts/problem/binder_design/binderbench/pdb/10_tnfa.pdb
+      hotspot:
+        A113
+        C73
+    binder:
+      min_length: 50
+      max_length: 120
+    tag:
+      AlphaProteo
+    other:
+      pdb_id: 1TNF
+
