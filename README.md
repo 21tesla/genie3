@@ -7,7 +7,9 @@ equivariant architectures.
 
 > **Preprint:** [Fast and Ultra-Capable Protein Design: Advancing the Frontier Through Atomistic SE(3)-Equivariance with Genie 3](https://www.biorxiv.org/content/10.64898/2026.05.01.722168v1)
 
-![Binder Design Demo](assets/binder_design_demo.gif)
+<p align="center">
+  <img src="assets/binder_design_demo.gif" alt="Binder Design Demo" />
+</p>
 
 ## Table of Contents
 
