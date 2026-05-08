@@ -45,7 +45,7 @@ fi
 
 hf_download() {
     local pattern="$1"
-    huggingface-cli download "$HF_REPO" \
+    hf download "$HF_REPO" \
         --include "$pattern" \
         --local-dir "$REPO_ROOT"
 }

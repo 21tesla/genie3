@@ -229,10 +229,10 @@ install_tmscore() {
         status_run "Building TMscore and TMalign"
         mkdir -p TMscore
         cd TMscore
-        run_logged wget https://zhanggroup.org/TM-score/TMscore.cpp
+        run_logged env -u LD_LIBRARY_PATH wget https://zhanggroup.org/TM-score/TMscore.cpp
         run_logged g++ -O3 -ffast-math -lm -o TMscore TMscore.cpp
         run_logged chmod +x TMscore
-        run_logged wget https://zhanggroup.org/TM-align/TMalign.cpp
+        run_logged env -u LD_LIBRARY_PATH wget https://zhanggroup.org/TM-align/TMalign.cpp
         run_logged g++ -O3 -ffast-math -lm -o TMalign TMalign.cpp
         run_logged chmod +x TMalign
         status_done "TMscore tools built"
@@ -248,7 +248,7 @@ install_dssp() {
         status_run "Installing mkdssp helper"
         mkdir -p dssp-2.3.0
         cd dssp-2.3.0
-        run_logged wget https://github.com/martinpacesa/BindCraft/raw/refs/heads/main/functions/dssp
+        run_logged env -u LD_LIBRARY_PATH wget https://github.com/martinpacesa/BindCraft/raw/refs/heads/main/functions/dssp
         run_logged mv dssp mkdssp
         run_logged chmod +x mkdssp
         status_done "DSSP helper installed"
