@@ -85,7 +85,9 @@ CONDA_PYTHON=""
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/$(date +%Y%m%d-%H%M%S).log"
 
+set +u
 eval "$(conda shell.bash hook)"
+set -u
 
 if [ "$VERBOSE" -eq 0 ]; then
     status_note "Detailed installer output: $LOG_FILE"
@@ -102,7 +104,13 @@ ensure_conda_env() {
     fi
 
     status_run "Activating environment ($ENV_NAME)"
+    
+    # --- FIX START ---
+    set +u  # Temporarily disable 'unbound variable' check
     conda activate "$ENV_NAME"
+    set -u  # Re-enable 'unbound variable' check
+    # --- FIX END ---
+
     run_logged conda install pip git -y
     CONDA_PYTHON="$CONDA_PREFIX/bin/python"
     status_done "Using Python $CONDA_PYTHON"
@@ -180,21 +188,30 @@ run_conda_python_code() {
 
 register_activation_script() {
     local name="$1"
-    local body="$2"
+    local activate_body="$2"
+    local deactivate_body="${3:-}"
 
     mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
-    printf '%s\n' "$body" > "$CONDA_PREFIX/etc/conda/activate.d/$name"
+    printf '%s\n' "$activate_body" > "$CONDA_PREFIX/etc/conda/activate.d/$name"
+
+    if [ -n "$deactivate_body" ]; then
+        mkdir -p "$CONDA_PREFIX/etc/conda/deactivate.d"
+        printf '%s\n' "$deactivate_body" > "$CONDA_PREFIX/etc/conda/deactivate.d/$name"
+    fi
 }
 
 remove_activation_script() {
     local name="$1"
     rm -f "$CONDA_PREFIX/etc/conda/activate.d/$name"
+    rm -f "$CONDA_PREFIX/etc/conda/deactivate.d/$name"
 }
 
 install_foldseek() {
     section "FoldSeek"
     status_run "Installing FoldSeek"
+    set +u
     run_logged conda install -c conda-forge -c bioconda foldseek -y
+    set -u 
     status_done "FoldSeek ready"
 }
 
@@ -260,6 +277,7 @@ install_dssp() {
 install_colabfold() {
     section "ColabFold"
     status_run "Installing ColabFold conda prerequisites"
+    set +u
     run_logged conda install -c conda-forge -c bioconda \
         kalign2=2.04 \
         hhsuite=3.3.0 \
@@ -267,6 +285,7 @@ install_colabfold() {
         openmm \
         "python=3.10" \
         -y
+    set -u
     status_done "ColabFold conda prerequisites ready"
 
     status_run "Installing ColabFold Python packages into $ENV_NAME"
@@ -294,35 +313,63 @@ download_alphafold_params('alphafold2_multimer_v3', **kwargs)"
     register_activation_script \
         "colabfold_env.sh" \
         "export XDG_CACHE_HOME=\"$XDG_CACHE_HOME\"
-export GENIE3_COLABFOLD_DATA_DIR=\"$GENIE3_COLABFOLD_DATA_DIR\""
+export GENIE3_COLABFOLD_DATA_DIR=\"$GENIE3_COLABFOLD_DATA_DIR\"" \
+        "unset XDG_CACHE_HOME
+unset GENIE3_COLABFOLD_DATA_DIR"
 }
+
 
 install_esmfold() {
     section "ESMFold"
-    export LIBRARY_PATH="${CONDA_PREFIX}/lib:${LIBRARY_PATH:-}"
-    export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+
+    status_run "Installing CUDA 12.8, GCC 12, and Ninja"
+    set +u
+    run_logged conda install -y \
+        -c nvidia \
+        -c conda-forge \
+        cuda-toolkit=12.8 \
+        gcc_linux-64=12 \
+        gxx_linux-64=12 \
+        ninja
+    set -u
+
+    local CC="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gcc"
+    local CXX="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++"
+    local CUDA_HOME="$CONDA_PREFIX"
 
     register_activation_script \
         "esmfold_env.sh" \
         "export LIBRARY_PATH=\"$CONDA_PREFIX/lib:\${LIBRARY_PATH:-}\"
-export LD_LIBRARY_PATH=\"$CONDA_PREFIX/lib:\${LD_LIBRARY_PATH:-}\"
-export CC=\"$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gcc\"
-export CXX=\"$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++\""
-
-    status_run "Installing GCC 13 toolchain"
-    run_logged conda install -c conda-forge "gcc_linux-64=13" "gxx_linux-64=13" -y
-    export CC="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gcc"
-    export CXX="$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++"
-    status_done "GCC toolchain ready"
+export CC=\"$CC\"
+export CXX=\"$CXX\"
+export CUDA_HOME=\"$CUDA_HOME\"" \
+        "export LIBRARY_PATH=\"\${LIBRARY_PATH#$CONDA_PREFIX/lib:}\"
+unset CC
+unset CXX
+unset CUDA_HOME"
 
     status_run "Installing ESMFold Python dependencies"
     run_conda_python_module pip install omegaconf dm-tree modelcif
     run_conda_python_module pip install git+https://github.com/NVIDIA/dllogger.git
+
+    status_run "Installing OpenFold (Targeting Blackwell arch)"
+    # Temporarily set LD_LIBRARY_PATH only for the build step if needed
+    LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+    TORCH_CUDA_ARCH_LIST="10.0;9.0;8.9" \
+    FORCE_CUDA="1" \
     run_conda_python_module pip install --no-build-isolation git+https://github.com/sokrypton/openfold.git
+    
+    status_run "Installing ESM and DeepSpeed"
     run_conda_python_module pip install git+https://github.com/sokrypton/esm.git
+    
+    # DeepSpeed may also need build flags if it compiles extensions
+    TORCH_CUDA_ARCH_LIST="10.0;9.0;8.9" \
+    FORCE_CUDA="1" \
     run_conda_python_module pip install --upgrade deepspeed
+    
     status_done "ESMFold dependencies ready"
 }
+
 
 ensure_conda_env
 configure_package_cache

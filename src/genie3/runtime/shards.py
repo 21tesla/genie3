@@ -34,6 +34,8 @@ def filter_problem_dirs(problem_dirs: list, selections: list[str] | None) -> lis
 def discover_problem_dirs(rootdir: str) -> list[str]:
     """Return directories under *rootdir* that contain a pdbs/ subdir."""
     root = Path(rootdir)
+    if not root.exists():
+        return []
     if (root / "pdbs").exists():
         return [rootdir]
     return [str(d) for d in sorted(root.iterdir()) if d.is_dir() and (d / "pdbs").exists()]

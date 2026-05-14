@@ -314,6 +314,13 @@ class Runner:
                 os.dup2(stream.fileno(), 2)
 
             try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.set_float32_matmul_precision("high")
+            except ImportError:
+                pass
+
+            try:
                 logging.info(
                     '[%s] Worker started (rootdir=%s, inverse_fold_model=%s, '
                     'fold_model=%s, fold_mode=%s)',

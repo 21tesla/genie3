@@ -34,6 +34,12 @@ class ESMFoldHandler(FoldHandler):
         if self.preload:
             self.model = esm.pretrained.esmfold_v1()
             self.model = self.model.eval().to(self.device)
+            try:
+                # Use bfloat16 on Blackwell/Hopper/Ampere for faster inference
+                self.model = self.model.to(torch.bfloat16)
+                logging.info(f"[{self.device}] ESMFold moved to bfloat16")
+            except Exception as e:
+                logging.warning(f"[{self.device}] Failed to move ESMFold to bfloat16: {e}")
 
     def fold(self, structures_dir):
         """

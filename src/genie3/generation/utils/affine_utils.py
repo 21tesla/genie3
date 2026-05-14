@@ -454,13 +454,17 @@ def batched_eigh(k: torch.Tensor) -> torch.Tensor:
 
     cfr. https://github.com/pytorch/pytorch/issues/166004
     '''
+    dtype = k.dtype
+    if dtype in [torch.bfloat16, torch.float16]:
+        k = k.to(torch.float32)
+
     max_allowed_4x4 = 31291
     if k[...,0,0].nelement() <= max_allowed_4x4:
         _, vectors = torch.linalg.eigh(k)
-        return vectors
+        return vectors.to(dtype)
     subvectors = []
     for k_small in torch.split(k.reshape(-1, 4, 4), max_allowed_4x4, dim=0):
         _, vectors_small = torch.linalg.eigh(k_small)
         subvectors.append(vectors_small)
     vectors = torch.cat(subvectors, dim=0)
-    return vectors.reshape(*k.shape)
+    return vectors.reshape(*k.shape).to(dtype)

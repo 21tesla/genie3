@@ -183,6 +183,7 @@ def _run_sample_main(args: Namespace) -> None:
             deterministic=True,
             enable_progress_bar=args.verbose,
             inference_mode=False,
+            precision="bf16-mixed",
         )
 
         get_active_reporter().set_status("generation")
@@ -278,6 +279,7 @@ def _run_train_main(args: Namespace) -> None:
         gradient_clip_algorithm=config.training.gradient_clip_algorithm,
         callbacks=callbacks,
         plugins=MPIEnvironment() if args.mpi_plugin else None,
+        precision="bf16-mixed",
     )
 
     if args.memory_snapshot:

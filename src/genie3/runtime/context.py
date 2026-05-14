@@ -130,6 +130,14 @@ class RunContext(AbstractContextManager["RunContext"]):
 
     def _configure_quiet_runtime_environment(self) -> None:
         """Reduce third-party runtime chatter in default terminal mode."""
+        try:
+            import torch
+            if torch.cuda.is_available():
+                # Optimize for Blackwell/Hopper/Ampere GPUs by enabling Tensor Cores
+                torch.set_float32_matmul_precision("high")
+        except ImportError:
+            pass
+
         updates: dict[str, str | None] = {}
         for key, value in {
             "TF_CPP_MIN_LOG_LEVEL": "2",
