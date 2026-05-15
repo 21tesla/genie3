@@ -245,8 +245,8 @@ class BinderReducer(Reducer):
         if not os.path.join(self.datadir):
             logging.error('[Binder Reducer] Data directory not provided')
             exit(0)
-        if self.fold_model_name not in ['colabfold', 'boltz2']:
-            logging.error('[Binder Reducer] Available fold model: colabfold/boltz2')
+        if self.fold_model_name not in ['colabfold', 'boltz2', 'esmfold']:
+            logging.error('[Binder Reducer] Available fold model: colabfold/boltz2/esmfold')
             exit(0)
         if self.fold_model_mode not in ['msa', 'template']:
             logging.error('[Binder Reducer] Available fold mode: msa/template')

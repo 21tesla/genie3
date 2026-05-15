@@ -12,12 +12,122 @@ import shutil
 import logging
 import sys
 import time
+import multiprocessing as mp
 from tqdm import tqdm
-from multiprocessing import Process
 
 from genie3.evaluation.mapper import Mapper
 from genie3.evaluation.reducer.registry import get_reducer
 from genie3.runtime.progress import get_active_reporter
+
+
+def map_by_device(version, rootdir, device, verbose, params):
+    """
+    Run the Mapper for a single device's PDB subset.
+
+    Args:
+        version: Pipeline version string
+        rootdir: Per-device root directory (contains 'pdbs' subdirectory)
+        device: CUDA device string (e.g. 'cuda:0')
+        verbose: Whether to display progress bars
+        params: Additional mapper parameters
+    """
+    workers_dir = os.environ.get("GENIE3_WORKERS_DIR")
+    worker_name = device.replace(":", "_")
+    primary_worker = device.endswith(":0")
+    worker_log_path = None
+    stream = None
+    original_stdout = None
+    original_stderr = None
+    root_logger = logging.getLogger()
+    previous_handlers = list(root_logger.handlers)
+    previous_level = root_logger.level
+    if workers_dir:
+        os.makedirs(workers_dir, exist_ok=True)
+        worker_log_path = os.path.join(
+            workers_dir,
+            f"evaluate_{worker_name}.log",
+        )
+        handlers = [logging.FileHandler(worker_log_path)]
+        if verbose and primary_worker:
+            handlers.append(logging.StreamHandler(sys.stdout))
+        formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+        for handler in handlers:
+            handler.setFormatter(formatter)
+        root_logger.handlers = handlers
+        root_logger.setLevel(logging.DEBUG)
+    elif verbose and primary_worker:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)],
+            force=True,
+        )
+
+    original_fd1 = None
+    original_fd2 = None
+    if worker_log_path is not None and not verbose:
+        stream = open(worker_log_path, "a")
+        original_stdout = sys.stdout
+        original_stderr = sys.stderr
+        sys.stdout = stream
+        sys.stderr = stream
+        # Also redirect OS-level fds so output from C extensions
+        # (e.g. DeepSpeed linker errors) goes to the log file.
+        original_fd1 = os.dup(1)
+        original_fd2 = os.dup(2)
+        os.dup2(stream.fileno(), 1)
+        os.dup2(stream.fileno(), 2)
+
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.set_float32_matmul_precision("high")
+    except ImportError:
+        pass
+
+    try:
+        logging.info(
+            '[%s] Worker started (rootdir=%s, inverse_fold_model=%s, '
+            'fold_model=%s, fold_mode=%s)',
+            device,
+            rootdir,
+            params.get('inverse_fold_model_name'),
+            params.get('fold_model_name'),
+            params.get('fold_mode'),
+        )
+        mapper = Mapper(
+            version=version,
+            datadir=params['datadir'],
+            device=device,
+            inverse_fold_mode=params['inverse_fold_mode'],
+            inverse_fold_model_name=params['inverse_fold_model_name'],
+            inverse_fold_num_seq=params['inverse_fold_num_seq'],
+            fold_mode=params['fold_mode'],
+            fold_model_name=params['fold_model_name'],
+            fold_backend=params.get('fold_backend', 'streamlined'),
+            fold_num_models=params.get('fold_num_models', 5),
+            fold_num_recycles=params.get('fold_num_recycles', 20),
+            verbose=verbose,
+        )
+        mapper.map(rootdir, verbose)
+        logging.info('[%s] Worker completed', device)
+    finally:
+        if stream is not None:
+            stream.flush()
+            if original_fd1 is not None:
+                os.dup2(original_fd1, 1)
+                os.close(original_fd1)
+            if original_fd2 is not None:
+                os.dup2(original_fd2, 2)
+                os.close(original_fd2)
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            stream.close()
+        if worker_log_path is not None:
+            for handler in root_logger.handlers:
+                handler.close()
+            root_logger.handlers = previous_handlers
+            root_logger.setLevel(previous_level)
 
 
 class Runner:
@@ -255,115 +365,6 @@ class Runner:
         ###   Set up   ###
         ##################
 
-        def map_by_device(version, rootdir, device, verbose, params):
-            """
-            Run the Mapper for a single device's PDB subset.
-
-            Args:
-                version: Pipeline version string
-                rootdir: Per-device root directory (contains 'pdbs' subdirectory)
-                device: CUDA device string (e.g. 'cuda:0')
-                verbose: Whether to display progress bars
-                params: Additional mapper parameters
-            """
-            workers_dir = os.environ.get("GENIE3_WORKERS_DIR")
-            worker_name = device.replace(":", "_")
-            primary_worker = device.endswith(":0")
-            worker_log_path = None
-            stream = None
-            original_stdout = None
-            original_stderr = None
-            root_logger = logging.getLogger()
-            previous_handlers = list(root_logger.handlers)
-            previous_level = root_logger.level
-            if workers_dir:
-                os.makedirs(workers_dir, exist_ok=True)
-                worker_log_path = os.path.join(
-                    workers_dir,
-                    f"evaluate_{worker_name}.log",
-                )
-                handlers = [logging.FileHandler(worker_log_path)]
-                if verbose and primary_worker:
-                    handlers.append(logging.StreamHandler(sys.stdout))
-                formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-                for handler in handlers:
-                    handler.setFormatter(formatter)
-                root_logger.handlers = handlers
-                root_logger.setLevel(logging.DEBUG)
-            elif verbose and primary_worker:
-                logging.basicConfig(
-                    level=logging.INFO,
-                    format="%(asctime)s [%(levelname)s] %(message)s",
-                    handlers=[logging.StreamHandler(sys.stdout)],
-                    force=True,
-                )
-
-            original_fd1 = None
-            original_fd2 = None
-            if worker_log_path is not None and not verbose:
-                stream = open(worker_log_path, "a")
-                original_stdout = sys.stdout
-                original_stderr = sys.stderr
-                sys.stdout = stream
-                sys.stderr = stream
-                # Also redirect OS-level fds so output from C extensions
-                # (e.g. DeepSpeed linker errors) goes to the log file.
-                original_fd1 = os.dup(1)
-                original_fd2 = os.dup(2)
-                os.dup2(stream.fileno(), 1)
-                os.dup2(stream.fileno(), 2)
-
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    torch.set_float32_matmul_precision("high")
-            except ImportError:
-                pass
-
-            try:
-                logging.info(
-                    '[%s] Worker started (rootdir=%s, inverse_fold_model=%s, '
-                    'fold_model=%s, fold_mode=%s)',
-                    device,
-                    rootdir,
-                    params.get('inverse_fold_model_name'),
-                    params.get('fold_model_name'),
-                    params.get('fold_mode'),
-                )
-                mapper = Mapper(
-                    version=version,
-                    datadir=params['datadir'],
-                    device=device,
-                    inverse_fold_mode=params['inverse_fold_mode'],
-                    inverse_fold_model_name=params['inverse_fold_model_name'],
-                    inverse_fold_num_seq=params['inverse_fold_num_seq'],
-                    fold_mode=params['fold_mode'],
-                    fold_model_name=params['fold_model_name'],
-                    fold_backend=params.get('fold_backend', 'streamlined'),
-                    fold_num_models=params.get('fold_num_models', 5),
-                    fold_num_recycles=params.get('fold_num_recycles', 20),
-                    verbose=verbose,
-                )
-                mapper.map(rootdir, verbose)
-                logging.info('[%s] Worker completed', device)
-            finally:
-                if stream is not None:
-                    stream.flush()
-                    if original_fd1 is not None:
-                        os.dup2(original_fd1, 1)
-                        os.close(original_fd1)
-                    if original_fd2 is not None:
-                        os.dup2(original_fd2, 2)
-                        os.close(original_fd2)
-                    sys.stdout = original_stdout
-                    sys.stderr = original_stderr
-                    stream.close()
-                if worker_log_path is not None:
-                    for handler in root_logger.handlers:
-                        handler.close()
-                    root_logger.handlers = previous_handlers
-                    root_logger.setLevel(previous_level)
-
         # Validate input directory
         devices_dir = os.path.join(rootdir, 'devices')
         if not os.path.exists(devices_dir):
@@ -374,13 +375,14 @@ class Runner:
         ###   Process   ###
         ###################
 
+        ctx = mp.get_context('spawn')
         processes = []
         try:
             for device_id in range(n_device):
                 device_rootdir = os.path.join(devices_dir, f'device_{device_id}')
                 if not os.path.exists(os.path.join(device_rootdir, 'pdbs')):
                     continue
-                process = Process(
+                process = ctx.Process(
                     target=map_by_device,
                     args=(
                         version,

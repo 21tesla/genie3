@@ -42,6 +42,7 @@ def get_fold_model(
             datadir=datadir,
             preload=preload,
             verbose=verbose,
+            **kwargs,
         )
     elif name == 'colabfold':
         from genie3.evaluation.model.fold.colabfold import ColabFoldHandler
