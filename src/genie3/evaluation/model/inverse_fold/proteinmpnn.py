@@ -365,6 +365,9 @@ class ProteinMPNNHanlder(InverseFoldHandler):
             domain_name = pdb_filepath.split('/')[-1].split('.')[0]
             sequences_filepath = os.path.join(sequences_dir, f'{domain_name}.fasta')
 
+            if os.path.exists(sequences_filepath):
+                continue
+
             # Predict
             lines = self.model.predict(
                 pdb_filepath,
@@ -390,6 +393,9 @@ class ProteinMPNNHanlder(InverseFoldHandler):
         for pdb_filepath in glob.glob(os.path.join(pdbs_dir, '*.pdb')):
             domain_name = pdb_filepath.split('/')[-1].split('.')[0]
             sequences_filepath = os.path.join(sequences_dir, f'{domain_name}.fasta')
+
+            if os.path.exists(sequences_filepath):
+                continue
 
             # Parse motif sequence
             fixed_residue_indices = []
@@ -431,6 +437,9 @@ class ProteinMPNNHanlder(InverseFoldHandler):
         for pdb_filepath in glob.glob(os.path.join(pdbs_dir, '*.pdb')):
             domain_name = pdb_filepath.split('/')[-1].split('.')[0]
             sequences_filepath = os.path.join(sequences_dir, f'{domain_name}.fasta')
+
+            if os.path.exists(sequences_filepath):
+                continue
 
             # Parse generated binder
             fixed_residue_indices = []

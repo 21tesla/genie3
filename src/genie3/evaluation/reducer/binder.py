@@ -75,7 +75,11 @@ def _compile_binder_design(design_filepath):
     }
 
     fold_compile_start_time = time.perf_counter()
-    info = ctx['fold_model'].compile(design_filepath)
+    try:
+        info = ctx['fold_model'].compile(design_filepath)
+    except Exception as e:
+        logging.warning(f'[Binder Reducer] Skipping {design_filepath} due to compilation error: {e}')
+        return None, timings
     timings['fold_compile_seconds'] = time.perf_counter() - fold_compile_start_time
 
     info['model'] = ctx['fold_model_name']
@@ -358,6 +362,8 @@ class BinderReducer(Reducer):
                 ))
 
         for info, timings in worker_items:
+            if info is None:
+                continue
             rows.append(info)
             for key in timing_sums:
                 timing_sums[key] += timings.get(key, 0.0)
@@ -414,8 +420,8 @@ class BinderReducer(Reducer):
         # Create output directory for successes based on version 0 filters
         v0_dir = os.path.join(results_dir, 'v0_success')
         if os.path.exists(v0_dir):
-            logging.error(f'Directory existed: {v0_dir}')
-            exit(0)
+            logging.warning(f'Overwriting existing successes directory: {v0_dir}')
+            shutil.rmtree(v0_dir)
         os.makedirs(os.path.join(v0_dir, 'successful_complexes'))
         os.makedirs(os.path.join(v0_dir, 'successful_incomplex_binders'))
         self._add_successes_dir(os.path.join(v0_dir, 'successful_incomplex_binders'))

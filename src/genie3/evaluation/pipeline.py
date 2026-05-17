@@ -433,14 +433,8 @@ class Runner:
         # Create output directories
         sequences_dir = os.path.join(rootdir, 'sequences')
         structures_dir = os.path.join(rootdir, 'structures')
-        if os.path.exists(sequences_dir):
-            logging.error(f'Directory existed: {sequences_dir}')
-            exit(0)
-        if os.path.exists(structures_dir):
-            logging.error(f'Directory existed: {structures_dir}')
-            exit(0)
-        os.makedirs(sequences_dir)
-        os.makedirs(structures_dir)
+        os.makedirs(sequences_dir, exist_ok=True)
+        os.makedirs(structures_dir, exist_ok=True)
 
         ###################
         ###   Process   ###

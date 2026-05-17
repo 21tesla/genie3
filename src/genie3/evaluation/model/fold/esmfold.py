@@ -80,7 +80,10 @@ class ESMFoldHandler(FoldHandler):
 
             # Set up
             outdir = os.path.join(structures_dir, name)
-            os.makedirs(outdir)
+            os.makedirs(outdir, exist_ok=True)
+
+            if os.path.exists(os.path.join(outdir, f'{name}.pdb')):
+                continue
 
             # Predict
             with torch.no_grad():

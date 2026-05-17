@@ -142,19 +142,35 @@ def main(args: Namespace) -> None:
                 logging.info("[Runner] Already reduced %s; skipping.", problem_dir_str)
                 continue
             assert_eval_shards_complete(problem_dir)
-            # Clean up stale reduce outputs from a previously failed reduce.
             # sequences/ and structures/ at problem root are kept as the persistent
             # re-reduce source; only results/ needs to be cleared.
             stale_dir = problem_dir / "results"
             if stale_dir.exists():
                 shutil.rmtree(stale_dir)
+            
             detected_num_shards = detect_num_eval_shards(problem_dir)
             if detected_num_shards is None:
                 logging.warning(
                     "No eval shard markers found in %s; skipping reduce.", problem_dir_str
                 )
                 continue
-            merge_eval_shard_outputs(problem_dir, detected_num_shards)
+            
+            # Ensure we have something to merge before potentially clearing root.
+            has_shard_data = False
+            for i in range(detected_num_shards):
+                shard_dir = problem_dir / "eval_shards" / f"shard_{i}_of_{detected_num_shards}"
+                if (shard_dir / "sequences").exists() or (shard_dir / "structures").exists():
+                    has_shard_data = True
+                    break
+            
+            if has_shard_data:
+                # If we are about to merge from shards, clear the destination first
+                # to avoid mixing with stale data or duplicating sequences.
+                for d in (problem_dir / "sequences", problem_dir / "structures"):
+                    if d.exists():
+                        shutil.rmtree(d)
+                merge_eval_shard_outputs(problem_dir, detected_num_shards)
+            
             runner.reduce(version, problem_dir_str, verbose, extra_kwargs)
             (problem_dir / "results").mkdir(exist_ok=True)
             (problem_dir / "results" / "eval.done").touch()

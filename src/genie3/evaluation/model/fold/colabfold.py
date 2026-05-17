@@ -489,6 +489,9 @@ class ColabFoldHandler(FoldHandler):
             sample_dir = os.path.join(structures_dir, sample_name)
             os.makedirs(sample_dir, exist_ok=True)
 
+            if glob.glob(os.path.join(sample_dir, "*.pdb")) or glob.glob(os.path.join(sample_dir, "*.cif")):
+                continue
+
             if total_samples <= 20 or sample_index == 1 or sample_index == total_samples or sample_index % 10 == 0:
                 logging.info(
                     '[ColabFoldHandler] Folding sample '

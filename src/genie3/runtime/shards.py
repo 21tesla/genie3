@@ -178,13 +178,15 @@ def merge_eval_shard_outputs(problem_dir: Path, num_shards: int) -> None:
             for d in shard_str.iterdir():
                 dst = str_dst / d.name
                 if d.is_dir():
-                    if not dst.exists():
-                        shutil.copytree(d, dst)
+                    if dst.exists():
+                        shutil.rmtree(dst)
+                    shutil.copytree(d, dst)
                 elif d.suffix in {".fasta", ".fa", ".faa"}:
                     # Each shard has a different subset of sequences — concatenate.
+                    # Use a set to avoid duplicates if re-running merge.
                     with open(d, "rb") as src_f, open(dst, "ab") as dst_f:
                         dst_f.write(src_f.read())
-                elif not dst.exists():
+                else:
                     shutil.copy2(d, dst)
 
 

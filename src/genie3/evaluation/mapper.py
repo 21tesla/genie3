@@ -150,10 +150,7 @@ class Mapper():
 
         # Create output directory
         sequences_dir = os.path.join(rootdir, 'sequences')
-        if os.path.exists(sequences_dir):
-            logging.error(f'Directory existed: {sequences_dir}')
-            exit(0)
-        os.makedirs(sequences_dir)
+        os.makedirs(sequences_dir, exist_ok=True)
 
         runtime_profile = {
             'generated_structures': len(glob.glob(os.path.join(pdbs_dir, '*.pdb'))),
@@ -184,10 +181,7 @@ class Mapper():
 
         # Create output directory
         structures_dir = os.path.join(rootdir, 'structures')
-        if os.path.exists(structures_dir):
-            logging.error(f'Directory existed: {structures_dir}')
-            exit(0)
-        os.makedirs(structures_dir)
+        os.makedirs(structures_dir, exist_ok=True)
 
         # Pack fasta files
         start_time = time.perf_counter()

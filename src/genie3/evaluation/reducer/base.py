@@ -427,8 +427,8 @@ class Reducer(ABC):
         # Create output directory
         results_dir = os.path.join(rootdir, 'results')
         if os.path.exists(results_dir):
-            logging.error(f'Directory existed: {results_dir}')
-            exit(0)
+            logging.warning(f'Overwriting existing results directory: {results_dir}')
+            shutil.rmtree(results_dir)
         os.makedirs(results_dir)
 
         # Compile
