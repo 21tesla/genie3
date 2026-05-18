@@ -45,6 +45,7 @@ class Mapper():
         verbose,
         device,
         datadir,
+        inverse_fold_sampling_temperature=0.1,
     ):
         """
         Initialize the Mapper with inverse fold and fold models.
@@ -58,6 +59,7 @@ class Mapper():
             fold_model_name: Name of the folding model
             device: GPU device index to use
             datadir: Path to the data directory
+            inverse_fold_sampling_temperature: Sampling temperature for inverse folding
         """
         self.version = version
         self.inverse_fold_mode = inverse_fold_mode
@@ -83,6 +85,7 @@ class Mapper():
             device=self.device,
             datadir=self.datadir,
             num_samples=inverse_fold_num_seq,
+            sampling_temperature=inverse_fold_sampling_temperature,
         )
         self.inverse_fold_model_init_seconds = time.perf_counter() - init_start_time
         logging.info(
@@ -196,7 +199,13 @@ class Mapper():
                 resample_index = 0
                 for line in file:
                     if line.startswith('>'):
-                        sample_name = f'{domain_name}-resample_{resample_index}'
+                        header = line.strip()[1:]
+                        if 'T=' in header:
+                            # Extract T=0.1 or similar
+                            temp_str = header.split('T=')[1].split(',')[0].strip()
+                            sample_name = f'{domain_name}-T_{temp_str}-resample_{resample_index}'
+                        else:
+                            sample_name = f'{domain_name}-resample_{resample_index}'
                         lines.append(f'>{sample_name}\n')
                         sample_names.append(sample_name)
                         resample_index += 1

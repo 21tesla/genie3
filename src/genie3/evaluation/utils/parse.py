@@ -94,7 +94,8 @@ def parse_problem_name_from_fasta(path) -> str:
     Extract the problem/domain name from the first FASTA header.
 
     The name is derived by stripping the trailing resample suffix
-    (e.g. '-resample_0') and the trailing index (e.g. '_0').
+    (e.g. '-resample_0') and optionally the temperature suffix (e.g. '-T_0.1'),
+    then stripping the trailing index (e.g. '_0').
 
     Args:
         path: Path to the FASTA file
@@ -108,7 +109,11 @@ def parse_problem_name_from_fasta(path) -> str:
     with open(path) as fh:
         for line in fh:
             if line.startswith(">"):
-                return line[1:].strip().rsplit("-", 1)[0].rsplit("_", 1)[0]
+                header = line[1:].strip()
+                # Remove known suffixes that might contain hyphens or underscores
+                name = header.split("-resample")[0].split("-T_")[0]
+                # Then remove the domain/backbone index (e.g. csank1_175 -> csank1)
+                return name.rsplit("_", 1)[0]
     raise ValueError(f"No FASTA header found in: {path}")
 
 

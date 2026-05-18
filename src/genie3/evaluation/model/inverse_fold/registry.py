@@ -8,7 +8,7 @@ subclass based on the model name.
 import logging
 
 
-def get_inverse_fold_model(name, version, mode, device, datadir=None, num_samples=8):
+def get_inverse_fold_model(name, version, mode, device, datadir=None, num_samples=8, **kwargs):
     """
     Instantiate an inverse fold model handler.
 
@@ -18,6 +18,7 @@ def get_inverse_fold_model(name, version, mode, device, datadir=None, num_sample
         mode: Inverse folding mode
         device: GPU device index
         datadir: Data directory path
+        **kwargs: Additional parameters for the handler (e.g. sampling_temperature)
 
     Returns:
         InverseFoldHandler: Configured inverse fold model handler instance
@@ -38,6 +39,7 @@ def get_inverse_fold_model(name, version, mode, device, datadir=None, num_sample
             device=device,
             datadir=datadir,
             num_samples=num_samples,
+            **kwargs
         )
     else:
         logging.error(f'Invalid inverse fold model name: {name}')

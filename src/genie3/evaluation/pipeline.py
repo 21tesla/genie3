@@ -108,6 +108,7 @@ def map_by_device(version, rootdir, device, verbose, params):
             fold_num_models=params.get('fold_num_models', 5),
             fold_num_recycles=params.get('fold_num_recycles', 20),
             verbose=verbose,
+            inverse_fold_sampling_temperature=params.get('sampling_temperature', 0.1),
         )
         mapper.map(rootdir, verbose)
         logging.info('[%s] Worker completed', device)

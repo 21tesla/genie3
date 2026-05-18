@@ -229,6 +229,8 @@ class ProteinMPNNWrapper():
                         all_log_probs_list.append(log_probs.cpu().data.numpy())
                         S_sample_list.append(S_sample.cpu().data.numpy())
                         for b_ix in range(BATCH_COPIES):
+                            # Global sample index across batches
+                            sample_id = j * BATCH_COPIES + b_ix
                             masked_chain_length_list = masked_chain_length_list_list[b_ix]
                             masked_list = masked_list_list[b_ix]
                             seq_recovery_rate = torch.sum(torch.sum(torch.nn.functional.one_hot(S[b_ix], 21)*torch.nn.functional.one_hot(S_sample[b_ix], 21),axis=-1)*mask_for_loss[b_ix])/torch.sum(mask_for_loss[b_ix])
@@ -254,7 +256,7 @@ class ProteinMPNNWrapper():
                             score_print = np.format_float_positional(np.float32(score), unique=False, precision=4)
                             seq_rec_print = np.format_float_positional(np.float32(seq_recovery_rate.detach().cpu().numpy()), unique=False, precision=4)
                             line = '>T={}, sample={}, score={}, seq_recovery={}\n{}\n'.format(
-                                temp, b_ix, score_print, seq_rec_print, seq
+                                temp, sample_id, score_print, seq_rec_print, seq
                             )
                             lines += line
                 inference_total_elapsed += time.perf_counter() - inference_start_time
@@ -438,7 +440,10 @@ class ProteinMPNNHanlder(InverseFoldHandler):
             domain_name = pdb_filepath.split('/')[-1].split('.')[0]
             sequences_filepath = os.path.join(sequences_dir, f'{domain_name}.fasta')
 
-            if os.path.exists(sequences_filepath):
+            # If multiple temperatures are requested, we don't want to skip
+            # based on existence because each temperature adds to the file.
+            # Only skip if a single temperature is used and file already exists.
+            if len(str(self.sampling_temperature).split()) == 1 and os.path.exists(sequences_filepath):
                 continue
 
             # Parse generated binder
