@@ -1,0 +1,42 @@
+experiment:
+  name: csank4
+
+paths:
+  rootdir: /home/logan/software/genie3/output/csank4
+  dataset: /home/logan/software/genie3/input
+
+generation:
+  compile: true
+  dataset:
+    source: target
+    selections: csank4
+    n_sample: 400
+  inference:
+    sampler:
+      sampler:
+        predict_sequence: true
+        direction_scale: 0.1
+    search:
+      name: beam
+      search:
+        beam_width: 4
+        score_interval: 25
+    reward:
+      name: colabfold
+      reward:
+        use_proteinmpnn: true
+        num_recycles: 1
+
+evaluation:
+  version: binder
+  inverse_folding:
+    model_name: proteinmpnn
+    num_seq: 8
+  folding:
+    model_name: colabfold
+    mode: template
+    num_models: 1
+    num_recycles: 3
+
+runtime:
+  workers: 8

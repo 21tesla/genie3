@@ -1,0 +1,34 @@
+{
+    "key": "csank4",
+    "name": "ANK1",
+    "target_pdb_filepath": "/home/logan/software/genie3/input/csank1/csank1.pdb",
+    "target_fasta_filepath": "/home/logan/software/genie3/input/csank1/csank1.fasta",
+    "target_msa_filepath": "/home/logan/software/genie3/input/csank1/csank1.a3m",
+    "target_pdb_filepath_by_chain": [
+        "/home/logan/software/genie3/input/csank1/csank1.pdb"
+    ],
+    "target_fasta_filepath_by_chain": [
+        "/home/logan/software/genie3/input/csank1/csank1.fasta"
+    ],
+    "target_msa_filepath_by_chain": [
+        "/home/logan/software/genie3/input/csank1/csank1.a3m"
+    ],
+    "target_chain_and_residues": [
+        "A1-285"
+    ],
+    "target_interface_residues": {
+        "hotspot": [
+            "A50",
+            "A58",
+            "A88",
+            "A91",
+            "A125",
+            "A158"
+        ]
+    },
+    "binder_min_length": 110,
+    "binder_max_length": 140,
+    "tag": [
+        "csank4"
+    ]
+}
