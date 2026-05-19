@@ -84,23 +84,21 @@ def _compile_binder_design(design_filepath):
 
     info['model'] = ctx['fold_model_name']
     
-    # Robustly find the reference PDB by progressively stripping suffixes.
+    # Find the reference PDB by matching the base problem name.
+    # The pdbs_dir should only contain the reference PDBs for this run.
     generation_filepath = None
-    domain_candidate = info['name']
-    while domain_candidate:
-        candidate_path = os.path.join(ctx['pdbs_dir'], f'{domain_candidate}.pdb')
-        if os.path.exists(candidate_path):
-            generation_filepath = candidate_path
-            break
-        last_under = domain_candidate.rfind('_')
-        last_hyphen = domain_candidate.rfind('-')
-        last_split = max(last_under, last_hyphen)
-        if last_split == -1:
-            break
-        domain_candidate = domain_candidate[:last_split]
+    # We already parsed problem_info in _compile, but we need the base name here.
+    # Instead of parsing it again, we can just look for ANY pdb in the dir since
+    # there is usually only one, or we can use the domain as a prefix.
+    base_prefix = info["domain"].split('-')[0] # e.g., csank1_175
     
+    for filename in os.listdir(ctx['pdbs_dir']):
+        if filename.endswith('.pdb') and filename.startswith(base_prefix):
+            generation_filepath = os.path.join(ctx['pdbs_dir'], filename)
+            break
+            
     if generation_filepath is None:
-        # Fallback to the original logic if nothing was found (will likely error downstream).
+        # Fallback to the original logic if nothing was found
         generation_filepath = os.path.join(ctx['pdbs_dir'], f'{info["domain"]}.pdb')
         
     info['generation_filepath'] = generation_filepath
