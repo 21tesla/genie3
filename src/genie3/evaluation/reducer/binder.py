@@ -83,7 +83,27 @@ def _compile_binder_design(design_filepath):
     timings['fold_compile_seconds'] = time.perf_counter() - fold_compile_start_time
 
     info['model'] = ctx['fold_model_name']
-    info['generation_filepath'] = os.path.join(ctx['pdbs_dir'], f'{info["domain"]}.pdb')
+    
+    # Robustly find the reference PDB by progressively stripping suffixes.
+    generation_filepath = None
+    domain_candidate = info['name']
+    while domain_candidate:
+        candidate_path = os.path.join(ctx['pdbs_dir'], f'{domain_candidate}.pdb')
+        if os.path.exists(candidate_path):
+            generation_filepath = candidate_path
+            break
+        last_under = domain_candidate.rfind('_')
+        last_hyphen = domain_candidate.rfind('-')
+        last_split = max(last_under, last_hyphen)
+        if last_split == -1:
+            break
+        domain_candidate = domain_candidate[:last_split]
+    
+    if generation_filepath is None:
+        # Fallback to the original logic if nothing was found (will likely error downstream).
+        generation_filepath = os.path.join(ctx['pdbs_dir'], f'{info["domain"]}.pdb')
+        
+    info['generation_filepath'] = generation_filepath
 
     seq = ctx['sample_name_to_seq'][info['name']]
     binder_seq = seq.strip().split(':')[0]
