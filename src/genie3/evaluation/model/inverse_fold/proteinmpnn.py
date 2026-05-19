@@ -437,7 +437,7 @@ class ProteinMPNNHanlder(InverseFoldHandler):
         """
 
         for pdb_filepath in glob.glob(os.path.join(pdbs_dir, '*.pdb')):
-            domain_name = pdb_filepath.split('/')[-1].split('.')[0]
+            domain_name = os.path.splitext(os.path.basename(pdb_filepath))[0]
             sequences_filepath = os.path.join(sequences_dir, f'{domain_name}.fasta')
 
             # If multiple temperatures are requested, we don't want to skip
@@ -457,7 +457,17 @@ class ProteinMPNNHanlder(InverseFoldHandler):
                                 fixed_residue_indices.append(int(line[22:26]))
 
             # Parse target sequences from fasta file
-            problem_name = domain_name.rsplit('_', 1)[0]
+            problem_name = domain_name
+            while problem_name and not os.path.exists(os.path.join(self.datadir, 'problems', f'{problem_name}.json')):
+                last_under = problem_name.rfind('_')
+                last_hyphen = problem_name.rfind('-')
+                last_split = max(last_under, last_hyphen)
+                if last_split == -1:
+                    break
+                problem_name = problem_name[:last_split]
+            if not os.path.exists(os.path.join(self.datadir, 'problems', f'{problem_name}.json')):
+                problem_name = domain_name.rsplit('_', 1)[0]
+                
             with open(os.path.join(self.datadir, 'problems', f'{problem_name}.json')) as file:
                 info = json.load(file)
             with open(info['target_fasta_filepath']) as file:
