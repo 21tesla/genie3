@@ -92,10 +92,10 @@ def _compile_binder_design(design_filepath):
     # there is usually only one, or we can use the domain as a prefix.
     base_prefix = info["domain"].split('-')[0] # e.g., csank1_175
     
-    for filename in os.listdir(ctx['pdbs_dir']):
-        if filename.endswith('.pdb') and filename.startswith(base_prefix):
-            generation_filepath = os.path.join(ctx['pdbs_dir'], filename)
-            break
+    # Require an EXACT match to avoid 'csank4_1' matching 'csank4_100.pdb'
+    expected_filename = f"{base_prefix}.pdb"
+    if expected_filename in os.listdir(ctx['pdbs_dir']):
+        generation_filepath = os.path.join(ctx['pdbs_dir'], expected_filename)
             
     if generation_filepath is None:
         # Fallback to the original logic if nothing was found
